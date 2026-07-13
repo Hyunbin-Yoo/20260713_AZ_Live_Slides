@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-8 text-slate-800">
+    <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6">
+        <h1 class="text-2xl font-bold border-b pb-4 mb-4">Presentation Control Center</h1>
+        
+        <div class="grid grid-cols-3 gap-4">
+            <button onclick="setPhase('pre')" class="p-4 bg-slate-200 hover:bg-slate-300 rounded font-bold text-slate-700 transition">1. Pre-Event (Locked)</button>
+            <button onclick="setPhase('open')" class="p-4 bg-green-500 hover:bg-green-600 rounded font-bold text-white transition shadow-lg">2. Open Submissions</button>
+            <button onclick="setPhase('closed')" class="p-4 bg-red-500 hover:bg-red-600 rounded font-bold text-white transition">3. Close Submissions</button>
+        </div>
+
+        <p id="admin-status" class="mt-6 text-sm font-mono text-slate-500 text-center">Ready.</p>
+    </div>
+
+    <script>
+        async function setPhase(phase) {
+            const status = document.getElementById('admin-status');
+            status.innerText = `Updating phase to: ${phase}...`;
+            
+            try {
+                // Update Cosmos DB state via Function App
+                await fetch('/api/setPhase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phase: phase })
+                });
+                status.innerText = `Phase successfully set to: ${phase.toUpperCase()}`;
+            } catch (error) {
+                status.innerText = `Error updating phase: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

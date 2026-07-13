@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Slideshow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <style>
+        .slide { transition: opacity 1s ease-in-out; }
+    </style>
+</head>
+<body class="bg-black h-screen w-full overflow-hidden flex items-center justify-center relative">
+    
+    <div id="image-container" class="absolute inset-0 bg-contain bg-center bg-no-repeat slide opacity-100"></div>
+    <div id="status-overlay" class="absolute bottom-4 left-4 text-white bg-black/50 px-3 py-1 rounded text-xs font-mono">Connecting to SignalR...</div>
+
+    <script>
+        const queue = [];
+        let currentIndex = -1;
+        const imgContainer = document.getElementById('image-container');
+        const statusOverlay = document.getElementById('status-overlay');
+
+        // Connect to Azure SignalR via the Azure Function Negotiate endpoint
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/api") // Static Web Apps proxies /api to the Azure Function
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("newPhoto", (data) => {
+            queue.push(data.url);
+            statusOverlay.innerText = `Live Queue: ${queue.length} photos`;
+            if (queue.length === 1) startLoop(); // Start loop on first photo
+        });
+
+        connection.start()
+            .then(() => statusOverlay.innerText = "Connected. Waiting for photos...")
+            .catch(err => statusOverlay.innerText = "Connection failed: " + err);
+
+        function startLoop() {
+            setInterval(() => {
+                if (queue.length === 0) return;
+                currentIndex = (currentIndex + 1) % queue.length;
+                
+                // Fade effect
+                imgContainer.style.opacity = 0;
+                setTimeout(() => {
+                    imgContainer.style.backgroundImage = `url('${queue[currentIndex]}')`;
+                    imgContainer.style.opacity = 1;
+                }, 1000);
+            }, 6000); // 6 second slides
+        }
+    </script>
+</body>
+</html>
