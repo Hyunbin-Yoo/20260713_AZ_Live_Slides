@@ -18,6 +18,7 @@
     <script>
         const queue = [];
         let currentIndex = -1;
+        let intervalId = null;
         const imgContainer = document.getElementById('image-container');
         const statusOverlay = document.getElementById('status-overlay');
 
@@ -38,7 +39,8 @@
             .catch(err => statusOverlay.innerText = "Connection failed: " + err);
 
         function startLoop() {
-            setInterval(() => {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = setInterval(() => {
                 if (queue.length === 0) return;
                 currentIndex = (currentIndex + 1) % queue.length;
                 

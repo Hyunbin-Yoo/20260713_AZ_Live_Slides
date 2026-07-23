@@ -17,6 +17,13 @@
         </div>
 
         <p id="admin-status" class="mt-6 text-sm font-mono text-slate-500 text-center">Ready.</p>
+
+        <hr class="my-6">
+
+        <h2 class="text-xl font-bold mb-4">Photo Queue</h2>
+        <div id="photo-list" class="space-y-2">
+            <!-- Photos will be loaded here -->
+        </div>
     </div>
 
     <script>
@@ -25,7 +32,6 @@
             status.innerText = `Updating phase to: ${phase}...`;
             
             try {
-                // Update Cosmos DB state via Function App
                 await fetch('/api/setPhase', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -36,6 +42,36 @@
                 status.innerText = `Error updating phase: ${error.message}`;
             }
         }
+
+        async function loadPhotos() {
+            const photoList = document.getElementById('photo-list');
+            try {
+                const response = await fetch('/api/getPhotos');
+                const photos = await response.json();
+                photoList.innerHTML = photos.map(photo => `
+                    <div class="flex items-center justify-between bg-slate-50 p-2 rounded">
+                        <img src="${photo.url}" alt="Photo" class="w-16 h-16 object-cover rounded">
+                        <span class="text-sm text-slate-600">${photo.id}</span>
+                        <button onclick="deletePhoto('${photo.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Delete</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                photoList.innerHTML = `<p class="text-red-500">Error loading photos: ${error.message}</p>`;
+            }
+        }
+
+        async function deletePhoto(id) {
+            if (!confirm('Delete this photo?')) return;
+            try {
+                await fetch(`/api/deletePhoto?id=${id}`, { method: 'DELETE' });
+                loadPhotos();
+            } catch (error) {
+                alert('Error deleting photo: ' + error.message);
+            }
+        }
+
+        // Load photos on page load
+        loadPhotos();
     </script>
 </body>
 </html>
