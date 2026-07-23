@@ -27,16 +27,48 @@
     </div>
 
     <script>
+        let currentPhase = 'pre'; // initial state
+
+        function updateButtons() {
+            const preBtn = document.querySelector('button[onclick*="pre"]');
+            const openBtn = document.querySelector('button[onclick*="open"]');
+            const closedBtn = document.querySelector('button[onclick*="closed"]');
+
+            // Enable all buttons first
+            preBtn.disabled = false;
+            openBtn.disabled = false;
+            closedBtn.disabled = false;
+
+            // Disable the button matching current phase
+            if (currentPhase === 'pre') {
+                preBtn.disabled = true;
+            } else if (currentPhase === 'open') {
+                openBtn.disabled = true;
+            } else if (currentPhase === 'closed') {
+                closedBtn.disabled = true;
+            }
+
+            // Prevent going back to pre-event after open or closed
+            if (currentPhase === 'open' || currentPhase === 'closed') {
+                preBtn.disabled = true;
+            }
+        }
+
         async function setPhase(phase) {
             const status = document.getElementById('admin-status');
             status.innerText = `Updating phase to: ${phase}...`;
             
             try {
-                await fetch('/api/setPhase', {
+                const response = await fetch('/api/setPhase', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phase: phase })
                 });
+                if (!response.ok) {
+                    throw new Error('Server returned ' + response.status);
+                }
+                currentPhase = phase;
+                updateButtons();
                 status.innerText = `Phase successfully set to: ${phase.toUpperCase()}`;
             } catch (error) {
                 status.innerText = `Error updating phase: ${error.message}`;
@@ -70,8 +102,9 @@
             }
         }
 
-        // Load photos on page load
+        // Load photos on page load and set initial button states
         loadPhotos();
+        updateButtons();
     </script>
 </body>
 </html>

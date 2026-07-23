@@ -31,25 +31,34 @@
 
             try {
                 // 1. Get SAS Token from Azure Function
-                const tokenResponse = await fetch(`/api/getUploadToken?filename=${file.name}`);
-                if (!tokenResponse.ok) throw new Error("Upload window closed or server error.");
+                const tokenResponse = await fetch(`/api/getUploadToken?filename=${encodeURIComponent(file.name)}`);
+                if (!tokenResponse.ok) {
+                    const errorText = await tokenResponse.text();
+                    throw new Error(errorText || "Upload window closed or server error.");
+                }
                 const { sasUrl, blobUrl } = await tokenResponse.json();
 
                 // 2. Direct upload to Azure Blob Storage
                 status.innerText = "Uploading directly to Azure...";
-                await fetch(sasUrl, {
+                const uploadResponse = await fetch(sasUrl, {
                     method: 'PUT',
                     headers: { 'x-ms-blob-type': 'BlockBlob' },
                     body: file
                 });
+                if (!uploadResponse.ok) {
+                    throw new Error("Blob upload failed with status " + uploadResponse.status);
+                }
 
                 // 3. Register the photo in Cosmos DB and broadcast via SignalR
                 status.innerText = "Registering photo with presentation...";
-                await fetch('/api/registerPhoto', {
+                const registerResponse = await fetch('/api/registerPhoto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: blobUrl })
                 });
+                if (!registerResponse.ok) {
+                    throw new Error("Registration failed with status " + registerResponse.status);
+                }
 
                 status.innerText = "Success! Photo added to queue.";
                 status.classList.add("text-green-600");
