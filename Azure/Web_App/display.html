@@ -24,7 +24,7 @@
 
         // Connect to Azure SignalR via the Azure Function Negotiate endpoint
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/api") // Static Web Apps proxies /api to the Azure Function
+            .withUrl("/api/negotiate") // Static Web Apps proxies /api to the Azure Function
             .withAutomaticReconnect()
             .build();
 
